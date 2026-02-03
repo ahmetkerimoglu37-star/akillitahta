@@ -3,61 +3,106 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Akıllı Tahta QR Uzaktan Kontrol</title>
+  <title>Tahta Kilit (QR Onay)</title>
 
-  <!-- Boşluk YOK -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; text-align:center; padding:40px; background:#f0f2f5; }
-    .card { background:#fff; padding:22px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.08); display:inline-block; width:min(560px, 95vw); }
-    #qrWrap { background:#fff; padding:16px; border-radius:14px; display:inline-block; }
-    #qrcode { width:256px; height:256px; margin:0 auto; }
-    .hidden { display:none; }
-    .btn { padding:18px 28px; font-size:20px; cursor:pointer; border:0; border-radius:999px; background:#28a745; color:#fff; box-shadow:0 4px 15px rgba(0,0,0,0.15); }
+    body { margin:0; font-family:system-ui, Arial; background:#0b0f19; color:#fff; }
+    .center { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px; }
+    .card { width:min(720px, 95vw); background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+            border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(0,0,0,0.35); text-align:center; }
+    #qrcode { background:#fff; padding:14px; border-radius:14px; display:inline-block; }
+    .muted { color:rgba(255,255,255,0.72); font-size:13px; word-break:break-word; }
+    .btn { padding:16px 26px; font-size:18px; border:0; border-radius:999px; cursor:pointer; background:#0d6efd; color:#fff; }
     .btn:active { transform:scale(0.98); }
-    .btn.blue { background:#0d6efd; }
-    .muted { color:#666; font-size:14px; word-break:break-word; }
-    .ok { color:#157347; font-weight:600; }
-    .bad { color:#b02a37; font-weight:600; }
-    h1 { margin-top:0; }
+    .btn.green { background:#28a745; }
+    .btn.gray { background:#6c757d; }
+    .hidden { display:none; }
+    .ok { color:#7CFFB2; font-weight:700; }
+    .bad { color:#ffb3b3; font-weight:700; }
   </style>
 </head>
 
 <body>
-  <!-- TAHTA -->
-  <div id="tahta" class="card">
-    <h1>Tahta Bekliyor</h1>
-    <div id="qrWrap">
-      <div id="qrcode"></div>
-    </div>
-    <p id="status" class="muted">ID oluşturuluyor, QR hazırlanıyor…</p>
-    <p id="debug" class="muted"></p>
-  </div>
 
-  <!-- TELEFON -->
-  <div id="telefon" class="card hidden">
-    <h1>Kumanda</h1>
-    <p id="phoneStatus" class="muted">Bağlantı kuruluyor…</p>
-    <button class="btn blue" id="sendBtn" disabled>TAHTAYI TETİKLE (BIP)</button>
-    <p id="debug2" class="muted"></p>
+<!-- TAHTA KİLİT EKRANI -->
+<div id="lockScreen" class="center">
+  <div class="card">
+    <h1>🔒 Tahta Kilitli</h1>
+    <p>Telefonla QR okut → <b>ONAYLA</b> → Tahta açılır.</p>
+
+    <div id="qrcode"></div>
+
+    <p id="status" class="muted">ID oluşturuluyor…</p>
+    <p id="debug" class="muted"></p>
+
+    <button class="btn gray" id="newQrBtn">Yeni QR</button>
   </div>
+</div>
+
+<!-- TAHTA AÇIK EKRAN (istersen bunu hiç göstermeden direkt yönlendirebiliriz) -->
+<div id="openScreen" class="center hidden">
+  <div class="card">
+    <h1>✅ Tahta Açıldı</h1>
+    <p class="muted">Yönlendiriliyor…</p>
+    <button class="btn gray" id="lockBtn">Tekrar Kilitle</button>
+  </div>
+</div>
+
+<!-- TELEFON ONAY -->
+<div id="phoneScreen" class="center hidden">
+  <div class="card">
+    <h1>📱 Telefon Onayı</h1>
+    <p>Tahtayı açmak için <b>ONAYLA</b>.</p>
+
+    <button class="btn green" id="approveBtn">ONAYLA</button>
+    <button class="btn gray" id="cancelBtn">İptal</button>
+
+    <p id="phoneStatus" class="muted">Bağlanıyor…</p>
+    <p id="phoneDebug" class="muted"></p>
+  </div>
+</div>
 
 <script>
 (() => {
-  const tahtaEl = document.getElementById("tahta");
-  const telEl = document.getElementById("telefon");
-  const statusEl = document.getElementById("status");
-  const debugEl = document.getElementById("debug");
-  const phoneStatusEl = document.getElementById("phoneStatus");
-  const debug2El = document.getElementById("debug2");
-  const sendBtn = document.getElementById("sendBtn");
+  // ✅ Kilit açılınca gidilecek sayfa:
+  // Buraya "normal masaüstü" yerine kullanmak istediğin web sayfasını yaz.
+  const AFTER_UNLOCK_URL = "https://www.google.com"; // <-- BUNU DEĞİŞTİR
 
   const params = new URLSearchParams(location.search);
   const remoteId = params.get("id"); // varsa telefon modu
 
-  // PeerJS Cloud (HTTPS + 443)
+  const lockScreen  = document.getElementById("lockScreen");
+  const openScreen  = document.getElementById("openScreen");
+  const phoneScreen = document.getElementById("phoneScreen");
+
+  const statusEl = document.getElementById("status");
+  const debugEl  = document.getElementById("debug");
+
+  const newQrBtn = document.getElementById("newQrBtn");
+  const lockBtn  = document.getElementById("lockBtn");
+
+  const approveBtn = document.getElementById("approveBtn");
+  const cancelBtn  = document.getElementById("cancelBtn");
+  const phoneStatus = document.getElementById("phoneStatus");
+  const phoneDebug  = document.getElementById("phoneDebug");
+
+  let conn = null;
+
+  function show(el){ el.classList.remove("hidden"); }
+  function hide(el){ el.classList.add("hidden"); }
+
+  function baseUrl() {
+    const u = new URL(location.href);
+    u.search = "";
+    u.hash = "";
+    u.pathname = u.pathname.replace(/index\.html$/i, "");
+    return u.toString();
+  }
+
+  // PeerJS Cloud
   const peer = new Peer({
     host: "0.peerjs.com",
     port: 443,
@@ -65,104 +110,100 @@
     path: "/"
   });
 
-  let conn = null;
+  // -------- TELEFON MODU --------
+  if (remoteId) {
+    hide(lockScreen); hide(openScreen); show(phoneScreen);
 
-  // GitHub Pages için base URL (index.html olsa da olmasa da)
-  function baseUrlForThisPage() {
-    const url = new URL(location.href);
-    // index.html'i temizle
-    url.search = "";
-    url.hash = "";
-    url.pathname = url.pathname.replace(/index\.html$/i, "");
-    return url.toString();
-  }
-
-  function showPhoneUI() {
-    tahtaEl.classList.add("hidden");
-    telEl.classList.remove("hidden");
-    document.body.style.background = "#eef6ff";
-  }
-
-  function showBoardUI() {
-    telEl.classList.add("hidden");
-    tahtaEl.classList.remove("hidden");
-    document.body.style.background = "#f0f2f5";
-  }
-
-  peer.on("open", (myId) => {
-    if (remoteId) {
-      // TELEFON
-      showPhoneUI();
-      debug2El.textContent = "Telefon Peer ID: " + myId;
+    peer.on("open", (myId) => {
+      phoneDebug.textContent = "Telefon Peer ID: " + myId;
 
       conn = peer.connect(remoteId, { reliable: true });
 
       conn.on("open", () => {
-        phoneStatusEl.innerHTML = "<span class='ok'>Tahtaya bağlandı ✅</span>";
-        sendBtn.disabled = false;
+        phoneStatus.innerHTML = "<span class='ok'>Tahtaya bağlandı ✅</span>";
       });
 
       conn.on("close", () => {
-        phoneStatusEl.innerHTML = "<span class='bad'>Bağlantı kapandı ❌ (yenileyin)</span>";
-        sendBtn.disabled = true;
+        phoneStatus.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span>";
       });
 
       conn.on("error", (e) => {
-        phoneStatusEl.innerHTML = "<span class='bad'>Bağlantı hatası ❌</span>";
-        debug2El.textContent = "Detay: " + (e?.message || e);
-        sendBtn.disabled = true;
+        phoneStatus.innerHTML = "<span class='bad'>Bağlantı hatası ❌</span>";
+        phoneDebug.textContent = "Detay: " + (e?.message || e);
       });
+    });
 
-      sendBtn.addEventListener("click", () => {
-        if (conn && conn.open) conn.send("BIP");
-      });
+    approveBtn.addEventListener("click", () => {
+      if (conn && conn.open) {
+        conn.send("UNLOCK");
+        phoneStatus.innerHTML = "<span class='ok'>Onay gönderildi ✅</span>";
+      } else {
+        phoneStatus.innerHTML = "<span class='bad'>Bağlantı yok ❌</span>";
+      }
+    });
 
-    } else {
-      // TAHTA
-      showBoardUI();
-      debugEl.textContent = "Tahta Peer ID: " + myId;
+    cancelBtn.addEventListener("click", () => {
+      phoneStatus.textContent = "İptal edildi.";
+    });
 
-      const phoneUrl = baseUrlForThisPage() + "?id=" + encodeURIComponent(myId);
+    peer.on("error", (err) => {
+      phoneStatus.innerHTML = "<span class='bad'>PeerJS hatası ❌</span>";
+      phoneDebug.textContent = (err?.type || "") + " - " + (err?.message || err);
+    });
 
-      const qrEl = document.getElementById("qrcode");
-      qrEl.innerHTML = "";
-      new QRCode(qrEl, { text: phoneUrl, width: 256, height: 256 });
+    return;
+  }
 
-      statusEl.textContent = "Telefonunuzla QR okutun (kumanda açılır).";
-    }
+  // -------- TAHTA MODU --------
+  function makeQR(myId) {
+    const phoneUrl = baseUrl() + "?id=" + encodeURIComponent(myId);
+    const qrEl = document.getElementById("qrcode");
+    qrEl.innerHTML = "";
+    new QRCode(qrEl, { text: phoneUrl, width: 256, height: 256 });
+  }
+
+  peer.on("open", (myId) => {
+    statusEl.textContent = "Telefonla QR okutun.";
+    debugEl.textContent  = "Tahta Peer ID: " + myId;
+    makeQR(myId);
+
+    newQrBtn.onclick = () => location.reload(); // en basit yeni ID
   });
 
-  // Tahta: bağlantı kabul et
   peer.on("connection", (c) => {
     conn = c;
-    statusEl.innerHTML = "<span class='ok'>TELEFON BAĞLANDI ✅</span>";
-    document.body.style.background = "#e8f5e9";
+    statusEl.innerHTML = "<span class='ok'>Telefon bağlandı ✅</span> Telefonda ONAYLA bekleniyor…";
 
-    conn.on("data", (d) => {
-      if (d === "BIP") {
-        document.body.style.background = "#fff3cd";
-        alert("Tahta: Komut alındı (BIP)!");
-        setTimeout(() => { document.body.style.background = "#e8f5e9"; }, 700);
+    conn.on("data", (msg) => {
+      if (msg === "UNLOCK") {
+        // ✅ WEB KİLİDİ KALKTI
+        hide(lockScreen);
+        show(openScreen);
+
+        // 0.5 sn sonra hedef sayfaya git (senin “normal kullanım” dediğin yer)
+        setTimeout(() => {
+          location.href = AFTER_UNLOCK_URL;
+        }, 500);
+      }
+      if (msg === "LOCK") {
+        show(lockScreen); hide(openScreen);
       }
     });
 
     conn.on("close", () => {
-      statusEl.innerHTML = "<span class='bad'>Bağlantı koptu ❌ (sayfayı yenileyin)</span>";
-      document.body.style.background = "#f0f2f5";
+      show(lockScreen); hide(openScreen);
+      statusEl.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span> Tekrar QR okutun.";
     });
   });
 
-  // PeerJS hata yakalama (QR çıkmıyorsa burada yazar)
-  peer.on("error", (err) => {
-    console.error("PeerJS error:", err);
+  lockBtn.addEventListener("click", () => {
+    show(lockScreen); hide(openScreen);
+    if (conn && conn.open) conn.send("LOCK");
+  });
 
-    if (!remoteId) {
-      statusEl.innerHTML = "<span class='bad'>PeerJS’e bağlanamadı ❌ (Okul ağı engelliyor olabilir)</span>";
-      debugEl.textContent = "Hata: " + (err?.type || "") + " - " + (err?.message || err);
-    } else {
-      phoneStatusEl.innerHTML = "<span class='bad'>PeerJS hatası ❌</span>";
-      debug2El.textContent = "Hata: " + (err?.type || "") + " - " + (err?.message || err);
-    }
+  peer.on("error", (err) => {
+    statusEl.innerHTML = "<span class='bad'>PeerJS’e bağlanamadı ❌ (ağ engeli olabilir)</span>";
+    debugEl.textContent = (err?.type || "") + " - " + (err?.message || err);
   });
 })();
 </script>
