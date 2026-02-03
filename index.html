@@ -3,87 +3,87 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Tahta Kilit (QR + PIN)</title>
+  <title>Tahta Kilit (QR + Offline PIN)</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
-    body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#0b0f19;color:#fff}
-    .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:22px}
-    .card{width:min(980px,96vw);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
-      border-radius:18px;padding:18px;box-shadow:0 18px 40px rgba(0,0,0,.35)}
-    .row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;justify-content:center}
-    .col{flex:1 1 360px}
-    h1,h2{margin:6px 0 10px}
-    .muted{color:rgba(255,255,255,.75);font-size:13px;word-break:break-word}
-    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;background:rgba(255,255,255,.12)}
-    .ok{color:#7CFFB2;font-weight:700}
-    .bad{color:#ffb3b3;font-weight:700}
-    #qrcode{background:#fff;padding:12px;border-radius:14px;display:inline-block}
-    .hidden{display:none!important}
-    .btn{padding:14px 18px;font-size:16px;border:0;border-radius:999px;cursor:pointer;background:#0d6efd;color:#fff}
-    .btn:active{transform:scale(.98)}
-    .btn.green{background:#28a745}
-    .btn.gray{background:#6c757d}
-    .btn.red{background:#dc3545}
+    body { margin:0; font-family:system-ui, Arial; background:#0b0f19; color:#fff; }
+    .center { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:22px; }
+    .card { width:min(980px, 96vw); background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
+            border-radius:18px; padding:22px; box-shadow:0 18px 40px rgba(0,0,0,0.35); text-align:center; }
+    #qrcode { background:#fff; padding:14px; border-radius:14px; display:inline-block; }
+    .muted { color:rgba(255,255,255,0.72); font-size:13px; word-break:break-word; }
+    .btn { padding:14px 18px; font-size:16px; border:0; border-radius:999px; cursor:pointer; background:#0d6efd; color:#fff; }
+    .btn:active { transform:scale(0.98); }
+    .btn.green { background:#28a745; }
+    .btn.gray { background:#6c757d; }
+    .btn.red { background:#dc3545; }
+    .hidden { display:none; }
+    .ok { color:#7CFFB2; font-weight:700; }
+    .bad { color:#ffb3b3; font-weight:700; }
 
-    /* PIN */
-    .pinBox{text-align:center}
-    .pinDots{display:flex;justify-content:center;gap:10px;margin:12px 0 10px}
-    .dot{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.25)}
-    .dot.filled{background:#fff}
-    .pad{display:grid;grid-template-columns:repeat(3,90px);gap:10px;justify-content:center;margin-top:10px}
-    .key{height:64px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.10);color:#fff;font-size:22px;cursor:pointer}
-    .key:active{transform:scale(.98)}
-    .line{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px}
-    input{padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.18);
-      background:rgba(0,0,0,.20);color:#fff;outline:none;width:min(260px,80vw)}
-
-    /* Açıldı ekranı */
-    .big{font-size:22px}
-    .kbd{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(0,0,0,.25)}
+    /* PIN panel */
+    .row { display:flex; gap:18px; flex-wrap:wrap; align-items:flex-start; justify-content:center; margin-top:16px; }
+    .col { flex: 1 1 320px; }
+    .pinBox { text-align:center; }
+    .dots { display:flex; justify-content:center; gap:10px; margin:12px 0 8px; }
+    .dot { width:14px; height:14px; border-radius:50%; background:rgba(255,255,255,0.25); }
+    .dot.filled { background:#fff; }
+    .pad { display:grid; grid-template-columns:repeat(3, 86px); gap:10px; justify-content:center; margin:10px 0; }
+    .key { height:60px; border-radius:14px; border:1px solid rgba(255,255,255,0.14);
+           background:rgba(255,255,255,0.10); color:#fff; font-size:22px; cursor:pointer; }
+    .key:active { transform:scale(0.98); }
+    .line { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
+    input { padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,0.18);
+            background:rgba(0,0,0,0.20); color:#fff; outline:none; width:min(260px, 80vw); }
+    .badge { display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; background:rgba(255,255,255,0.12); }
   </style>
 </head>
 
 <body>
 
-<!-- TAHTA KİLİT -->
+<!-- TAHTA KİLİT EKRANI -->
 <div id="lockScreen" class="center">
   <div class="card">
     <h1>🔒 Tahta Kilitli</h1>
-    <p class="muted">İnternet varsa QR ile onaylayın. İnternet yoksa PIN ile açın.</p>
+    <p>İnternet varsa: Telefonla QR okut → <b>ONAYLA</b> → Açılır. <br/>İnternet yoksa: PIN ile aç.</p>
 
     <div class="row">
-      <!-- QR -->
+      <!-- QR / Telefon -->
       <div class="col">
         <h2>QR ile Onay</h2>
         <div id="qrcode"></div>
-        <p id="qrStatus" class="muted">QR hazırlanıyor…</p>
-        <p id="peerDebug" class="muted"></p>
-        <span class="badge" id="netBadge">Durum: <span class="bad">Kontrol ediliyor…</span></span>
+
+        <p id="status" class="muted">ID oluşturuluyor…</p>
+        <p id="debug" class="muted"></p>
+
+        <span class="badge" id="netBadge">Durum: ...</span>
+        <div class="line" style="margin-top:12px;">
+          <button class="btn gray" id="newQrBtn">Yeni QR</button>
+        </div>
       </div>
 
-      <!-- PIN -->
+      <!-- Offline PIN -->
       <div class="col pinBox">
-        <h2>PIN ile Aç (Offline)</h2>
-        <p class="muted">Varsayılan PIN: <b>1234</b> (ilk kurulum). Sonra değiştirebilirsin.</p>
+        <h2>Offline PIN</h2>
+        <p class="muted">Varsayılan PIN: <b>1234</b> (ilk kez). Sonra değiştirebilirsin.</p>
 
-        <div class="pinDots" id="dots"></div>
+        <div class="dots" id="dots"></div>
         <div class="muted" id="pinMsg"></div>
 
         <div class="pad" id="pad"></div>
 
-        <div class="line" style="margin-top:14px;">
+        <div class="line">
           <button class="btn gray" id="clearBtn">Temizle</button>
           <button class="btn red" id="backBtn">Sil</button>
           <button class="btn green" id="enterBtn">GİR</button>
         </div>
 
-        <hr style="margin:16px 0;border-color:rgba(255,255,255,.12)">
+        <hr style="margin:16px 0; border-color: rgba(255,255,255,0.12);">
 
-        <h2>PIN Değiştir</h2>
+        <h3>PIN Değiştir</h3>
         <p class="muted">Mevcut PIN + Yeni PIN gir.</p>
         <div class="line">
           <input id="oldPin" placeholder="Mevcut PIN" inputmode="numeric" maxlength="12">
@@ -98,32 +98,24 @@
   </div>
 </div>
 
-<!-- TAHTA AÇIK -->
+<!-- TAHTA AÇIK EKRAN -->
 <div id="openScreen" class="center hidden">
-  <div class="card" style="text-align:center;">
+  <div class="card">
     <h1>✅ Tahta Açıldı</h1>
-    <p class="big">Masaüstüne dönmek için <span class="kbd">ALT</span> + <span class="kbd">F4</span></p>
-    <p class="muted">
-      Not: Tarayıcı, güvenlik nedeniyle kendi kendini her zaman kapatamaz.
-      Kiosk/App modda ise otomatik kapanma daha olasıdır.
-    </p>
-    <div class="line" style="justify-content:center;">
-      <button class="btn gray" id="tryCloseBtn">Tarayıcıyı Kapatmayı Dene</button>
-      <button class="btn gray" id="lockBtn">Tekrar Kilitle</button>
-    </div>
-    <p class="muted" id="openMsg"></p>
+    <p class="muted">Yönlendiriliyor…</p>
+    <button class="btn gray" id="lockBtn">Tekrar Kilitle</button>
   </div>
 </div>
 
 <!-- TELEFON ONAY -->
 <div id="phoneScreen" class="center hidden">
-  <div class="card" style="text-align:center;">
+  <div class="card">
     <h1>📱 Telefon Onayı</h1>
-    <p class="muted">Tahtayı açmak için ONAYLA.</p>
-    <div class="line" style="justify-content:center;">
-      <button class="btn green" id="approveBtn">ONAYLA</button>
-      <button class="btn gray" id="cancelBtn">İptal</button>
-    </div>
+    <p>Tahtayı açmak için <b>ONAYLA</b>.</p>
+
+    <button class="btn green" id="approveBtn">ONAYLA</button>
+    <button class="btn gray" id="cancelBtn">İptal</button>
+
     <p id="phoneStatus" class="muted">Bağlanıyor…</p>
     <p id="phoneDebug" class="muted"></p>
   </div>
@@ -131,30 +123,36 @@
 
 <script>
 (() => {
-  // ========= AYARLAR =========
-  // Kilit açılınca otomatik "masaüstü" diye bir şey web ile açılamaz.
-  // Ama istersen bir hedef siteye yönlendirebilirsin:
-  const AFTER_UNLOCK_URL = ""; // örn: "https://eba.gov.tr"  (boş bırakınca yönlendirme yok)
+  // ✅ Kilit açılınca gidilecek sayfa:
+  const AFTER_UNLOCK_URL = "https://www.google.com"; // <-- değiştirilebilir
 
+  // ✅ Offline PIN ayarları
   const DEFAULT_PIN = "1234";
   const PIN_KEY = "TAHTA_PIN_V1";
 
-  // ========= DOM =========
   const params = new URLSearchParams(location.search);
-  const remoteId = params.get("id"); // telefon modu
+  const remoteId = params.get("id"); // varsa telefon modu
 
-  const lockScreen = document.getElementById("lockScreen");
-  const openScreen = document.getElementById("openScreen");
+  const lockScreen  = document.getElementById("lockScreen");
+  const openScreen  = document.getElementById("openScreen");
   const phoneScreen = document.getElementById("phoneScreen");
 
-  const qrStatus = document.getElementById("qrStatus");
-  const peerDebug = document.getElementById("peerDebug");
+  const statusEl = document.getElementById("status");
+  const debugEl  = document.getElementById("debug");
   const netBadge = document.getElementById("netBadge");
 
+  const newQrBtn = document.getElementById("newQrBtn");
+  const lockBtn  = document.getElementById("lockBtn");
+
+  const approveBtn = document.getElementById("approveBtn");
+  const cancelBtn  = document.getElementById("cancelBtn");
+  const phoneStatus = document.getElementById("phoneStatus");
+  const phoneDebug  = document.getElementById("phoneDebug");
+
+  // PIN DOM
   const dotsEl = document.getElementById("dots");
   const padEl = document.getElementById("pad");
   const pinMsg = document.getElementById("pinMsg");
-
   const clearBtn = document.getElementById("clearBtn");
   const backBtn = document.getElementById("backBtn");
   const enterBtn = document.getElementById("enterBtn");
@@ -164,167 +162,140 @@
   const changePinBtn = document.getElementById("changePinBtn");
   const changeMsg = document.getElementById("changeMsg");
 
-  const lockBtn = document.getElementById("lockBtn");
-  const tryCloseBtn = document.getElementById("tryCloseBtn");
-  const openMsg = document.getElementById("openMsg");
-
-  const approveBtn = document.getElementById("approveBtn");
-  const cancelBtn = document.getElementById("cancelBtn");
-  const phoneStatus = document.getElementById("phoneStatus");
-  const phoneDebug = document.getElementById("phoneDebug");
-
   let conn = null;
-  let currentPinInput = "";
+  let pinInput = "";
 
-  const show = el => el.classList.remove("hidden");
-  const hide = el => el.classList.add("hidden");
+  function show(el){ el.classList.remove("hidden"); }
+  function hide(el){ el.classList.add("hidden"); }
 
-  function showLock(){ show(lockScreen); hide(openScreen); hide(phoneScreen); }
-  function showOpen(){ hide(lockScreen); show(openScreen); hide(phoneScreen); }
-
-  // ========= PIN =========
-  function getSavedPin() {
-    const p = localStorage.getItem(PIN_KEY);
-    return (p && p.length >= 4) ? p : DEFAULT_PIN;
-  }
-  function setSavedPin(p) { localStorage.setItem(PIN_KEY, p); }
-
-  function renderDots() {
-    dotsEl.innerHTML = "";
-    const len = Math.min(currentPinInput.length, 4);
-    for (let i = 0; i < 4; i++) {
-      const dot = document.createElement("div");
-      dot.className = "dot" + (i < len ? " filled" : "");
-      dotsEl.appendChild(dot);
-    }
+  function baseUrl() {
+    const u = new URL(location.href);
+    u.search = "";
+    u.hash = "";
+    u.pathname = u.pathname.replace(/index\.html$/i, "");
+    return u.toString();
   }
 
-  function setPinMessage(text, ok=false) {
-    pinMsg.innerHTML = ok ? `<span class="ok">${text}</span>` : `<span class="bad">${text}</span>`;
-    setTimeout(() => { pinMsg.textContent = ""; }, 1600);
-  }
-
-  function buildPad() {
-    padEl.innerHTML = "";
-    const nums = ["1","2","3","4","5","6","7","8","9","0"];
-    nums.forEach(n => {
-      const b = document.createElement("button");
-      b.className = "key";
-      b.textContent = n;
-      b.addEventListener("click", () => {
-        if (currentPinInput.length >= 4) return;
-        currentPinInput += n;
-        renderDots();
-      });
-      padEl.appendChild(b);
-    });
-  }
-
-  function unlockBoard(source) {
-    showOpen();
-    openMsg.textContent = "Açıldı (" + source + ").";
-
-    // İstersen açılınca bir web sayfasına yönlen (masaüstü yerine)
-    if (AFTER_UNLOCK_URL) {
-      setTimeout(() => location.href = AFTER_UNLOCK_URL, 600);
-    }
-
-    // Tarayıcıyı kapatmayı DENE (çoğu zaman engellenir)
-    setTimeout(() => { tryClose(); }, 900);
-  }
-
-  function tryClose() {
-    try {
-      // Bazı durumlarda (app/kiosk/JS ile açılan pencere) işe yarar
-      window.open("", "_self");
-      window.close();
-    } catch (e) {}
-  }
-
-  function tryUnlockByPin() {
-    const realPin = getSavedPin();
-    if (currentPinInput === realPin) {
-      setPinMessage("PIN doğru ✅", true);
-      unlockBoard("PIN");
-    } else {
-      setPinMessage("PIN yanlış ❌");
-      currentPinInput = "";
-      renderDots();
-    }
-  }
-
-  // PIN butonları
-  buildPad();
-  renderDots();
-
-  clearBtn.addEventListener("click", () => { currentPinInput=""; renderDots(); });
-  backBtn.addEventListener("click", () => { currentPinInput=currentPinInput.slice(0,-1); renderDots(); });
-  enterBtn.addEventListener("click", tryUnlockByPin);
-
-  // PIN değiştir
-  const onlyDigits = s => (s || "").replace(/\D/g, "");
-  changePinBtn.addEventListener("click", () => {
-    const oldP = onlyDigits(oldPinEl.value);
-    const newP = onlyDigits(newPinEl.value);
-    const realP = getSavedPin();
-
-    if (!oldP || !newP) return changeMsg.innerHTML = "<span class='bad'>İki alan da dolu olmalı.</span>";
-    if (oldP !== realP) return changeMsg.innerHTML = "<span class='bad'>Mevcut PIN yanlış ❌</span>";
-    if (newP.length < 4) return changeMsg.innerHTML = "<span class='bad'>Yeni PIN 4 haneli olmalı.</span>";
-
-    setSavedPin(newP);
-    oldPinEl.value = ""; newPinEl.value = "";
-    changeMsg.innerHTML = "<span class='ok'>PIN değiştirildi ✅</span>";
-    setTimeout(() => changeMsg.textContent = "", 1600);
-  });
-
-  // ========= İnternet göstergesi =========
   function updateNetBadge() {
     netBadge.innerHTML = navigator.onLine
       ? 'Durum: <span class="ok">İnternet var</span>'
-      : 'Durum: <span class="bad">İnternet yok</span>';
+      : 'Durum: <span class="bad">İnternet yok</span> (PIN ile aç)';
   }
   window.addEventListener("online", updateNetBadge);
   window.addEventListener("offline", updateNetBadge);
   updateNetBadge();
 
-  // ========= QR base =========
-  function baseUrl() {
-    const u = new URL(location.href);
-    u.search = ""; u.hash = "";
-    u.pathname = u.pathname.replace(/index\.html$/i, "");
-    return u.toString();
+  // -------- PIN Helpers --------
+  function getPin() {
+    const p = localStorage.getItem(PIN_KEY);
+    return (p && p.length >= 4) ? p : DEFAULT_PIN;
+  }
+  function setPin(p) {
+    localStorage.setItem(PIN_KEY, p);
+  }
+  function renderDots() {
+    dotsEl.innerHTML = "";
+    for (let i = 0; i < 4; i++) {
+      const d = document.createElement("div");
+      d.className = "dot" + (i < pinInput.length ? " filled" : "");
+      dotsEl.appendChild(d);
+    }
+  }
+  function msg(el, text, ok=false) {
+    el.innerHTML = ok ? `<span class="ok">${text}</span>` : `<span class="bad">${text}</span>`;
+    setTimeout(() => { el.textContent = ""; }, 1600);
+  }
+  function buildPad() {
+    const nums = ["1","2","3","4","5","6","7","8","9","0"];
+    padEl.innerHTML = "";
+    nums.forEach(n => {
+      const b = document.createElement("button");
+      b.className = "key";
+      b.textContent = n;
+      b.onclick = () => {
+        if (pinInput.length >= 4) return;
+        pinInput += n;
+        renderDots();
+      };
+      padEl.appendChild(b);
+    });
+  }
+  function unlockByPin() {
+    if (pinInput === getPin()) {
+      msg(pinMsg, "PIN doğru ✅ Açılıyor…", true);
+      hide(lockScreen);
+      show(openScreen);
+      setTimeout(() => location.href = AFTER_UNLOCK_URL, 500);
+    } else {
+      msg(pinMsg, "PIN yanlış ❌");
+      pinInput = "";
+      renderDots();
+    }
   }
 
-  // ========= PeerJS =========
-  const peer = new Peer({ host:"0.peerjs.com", port:443, secure:true, path:"/" });
+  buildPad();
+  renderDots();
 
-  // ---- TELEFON ----
+  clearBtn.onclick = () => { pinInput=""; renderDots(); };
+  backBtn.onclick = () => { pinInput = pinInput.slice(0, -1); renderDots(); };
+  enterBtn.onclick = unlockByPin;
+  window.addEventListener("keydown", (e) => { if (e.key === "Enter") unlockByPin(); });
+
+  changePinBtn.onclick = () => {
+    const oldP = (oldPinEl.value || "").replace(/\D/g,"");
+    const newP = (newPinEl.value || "").replace(/\D/g,"");
+    if (!oldP || !newP) return msg(changeMsg, "İki alan da dolu olmalı.");
+    if (oldP !== getPin()) return msg(changeMsg, "Mevcut PIN yanlış ❌");
+    if (newP.length < 4) return msg(changeMsg, "Yeni PIN en az 4 haneli olmalı.");
+    setPin(newP);
+    oldPinEl.value = "";
+    newPinEl.value = "";
+    msg(changeMsg, "PIN değiştirildi ✅", true);
+  };
+
+  // PeerJS Cloud
+  const peer = new Peer({
+    host: "0.peerjs.com",
+    port: 443,
+    secure: true,
+    path: "/"
+  });
+
+  // -------- TELEFON MODU --------
   if (remoteId) {
     hide(lockScreen); hide(openScreen); show(phoneScreen);
 
     peer.on("open", (myId) => {
       phoneDebug.textContent = "Telefon Peer ID: " + myId;
-      conn = peer.connect(remoteId, { reliable:true });
 
-      conn.on("open", () => phoneStatus.innerHTML = "<span class='ok'>Tahtaya bağlandı ✅</span>");
-      conn.on("close", () => phoneStatus.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span>");
+      conn = peer.connect(remoteId, { reliable: true });
+
+      conn.on("open", () => {
+        phoneStatus.innerHTML = "<span class='ok'>Tahtaya bağlandı ✅</span>";
+      });
+
+      conn.on("close", () => {
+        phoneStatus.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span>";
+      });
+
       conn.on("error", (e) => {
         phoneStatus.innerHTML = "<span class='bad'>Bağlantı hatası ❌</span>";
         phoneDebug.textContent = "Detay: " + (e?.message || e);
       });
     });
 
-    approveBtn.addEventListener("click", () => {
+    approveBtn.onclick = () => {
       if (conn && conn.open) {
         conn.send("UNLOCK");
         phoneStatus.innerHTML = "<span class='ok'>Onay gönderildi ✅</span>";
       } else {
         phoneStatus.innerHTML = "<span class='bad'>Bağlantı yok ❌</span>";
       }
-    });
+    };
 
-    cancelBtn.addEventListener("click", () => phoneStatus.textContent = "İptal edildi.");
+    cancelBtn.onclick = () => {
+      phoneStatus.textContent = "İptal edildi.";
+    };
 
     peer.on("error", (err) => {
       phoneStatus.innerHTML = "<span class='bad'>PeerJS hatası ❌</span>";
@@ -334,7 +305,7 @@
     return;
   }
 
-  // ---- TAHTA ----
+  // -------- TAHTA MODU --------
   function makeQR(myId) {
     const phoneUrl = baseUrl() + "?id=" + encodeURIComponent(myId);
     const qrEl = document.getElementById("qrcode");
@@ -343,27 +314,45 @@
   }
 
   peer.on("open", (myId) => {
-    qrStatus.textContent = "Telefonla QR okutun (internet varsa).";
-    peerDebug.textContent = "Tahta Peer ID: " + myId;
+    statusEl.textContent = "Telefonla QR okutun. (İnternet yoksa PIN ile açın)";
+    debugEl.textContent  = "Tahta Peer ID: " + myId;
     makeQR(myId);
+
+    newQrBtn.onclick = () => location.reload();
   });
 
   peer.on("connection", (c) => {
     conn = c;
-    qrStatus.innerHTML = "<span class='ok'>Telefon bağlandı ✅</span> Telefonda ONAYLA bekleniyor…";
-    conn.on("data", (msg) => { if (msg === "UNLOCK") unlockBoard("QR Onay"); });
-    conn.on("close", () => qrStatus.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span> PIN ile açabilirsiniz.");
+    statusEl.innerHTML = "<span class='ok'>Telefon bağlandı ✅</span> Telefonda ONAYLA bekleniyor…";
+
+    conn.on("data", (msg) => {
+      if (msg === "UNLOCK") {
+        hide(lockScreen);
+        show(openScreen);
+        setTimeout(() => {
+          location.href = AFTER_UNLOCK_URL;
+        }, 500);
+      }
+      if (msg === "LOCK") {
+        show(lockScreen); hide(openScreen);
+      }
+    });
+
+    conn.on("close", () => {
+      show(lockScreen); hide(openScreen);
+      statusEl.innerHTML = "<span class='bad'>Bağlantı koptu ❌</span> Tekrar QR okutun / PIN ile açın.";
+    });
   });
+
+  lockBtn.onclick = () => {
+    show(lockScreen); hide(openScreen);
+    if (conn && conn.open) conn.send("LOCK");
+  };
 
   peer.on("error", (err) => {
-    qrStatus.innerHTML = "<span class='bad'>QR bağlantısı yok ❌</span> PIN ile açabilirsiniz.";
-    peerDebug.textContent = (err?.type || "") + " - " + (err?.message || err);
+    statusEl.innerHTML = "<span class='bad'>QR bağlantısı yok ❌</span> PIN ile açabilirsiniz.";
+    debugEl.textContent = "Hata: " + (err?.type || "") + " - " + (err?.message || err);
   });
-
-  // Açık ekranda butonlar
-  lockBtn.addEventListener("click", () => { currentPinInput=""; renderDots(); showLock(); });
-  tryCloseBtn.addEventListener("click", tryClose);
-
 })();
 </script>
 </body>
